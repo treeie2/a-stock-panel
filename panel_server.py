@@ -357,11 +357,29 @@ class PanelHandler(SimpleHTTPRequestHandler):
         existing_stocks = data.get("stocks", [])
         
         added_count = 0
+        updated_count = 0
         for new_stock in stocks:
             code = str(new_stock.get("code", "")).strip()
             name = str(new_stock.get("name", "")).strip()
-            if not code or not name:
-                print(f"跳过无效股票: {new_stock}")
+            
+            # 处理无效代码：过滤掉格式不正确的代码
+            if code and code.lower() != "null":
+                # 清理代码：移除市场后缀
+                import re
+                code = re.sub(r'\.(SZ|SH|SS|HK)$', '', code, flags=re.IGNORECASE).strip()
+            
+            # 如果没有代码或代码无效，仍然保存股票，但标记需要手动填写
+            if not code or code.lower() == "null" or not name:
+                # 为没有代码的股票生成临时代码标识
+                temp_code = f"PENDING_{name}"
+                new_stock_temp = dict(new_stock)
+                new_stock_temp["code"] = temp_code
+                new_stock_temp["pending_code"] = True  # 标记需要手动填写代码
+                new_stock_temp["article_count"] = len(new_stock.get("articles", []))
+                new_stock_temp["last_updated"] = "2026-03-26"
+                existing_stocks.insert(0, new_stock_temp)
+                added_count += 1
+                print(f"添加待完善股票: {name} (需要手动填写代码)")
                 continue
             
             # 检查是否已存在
@@ -532,7 +550,8 @@ def update_stock(data: dict, code: str, new_stock: dict) -> bool:
 
 
 def is_stock_page_path(path: str) -> bool:
-    return bool(re.fullmatch(r"/\d{5,6}", path))
+    # 匹配纯数字股票代码（如300xxx）或PENDING_开头的待完善股票
+    return bool(re.fullmatch(r"/\d{5,6}", path) or re.fullmatch(r"/PENDING_.*", path))
 
 
 def main():

@@ -275,9 +275,13 @@ function bindEditButton() {
 }
 
 function switchToEditMode(stock) {
+  // 检查是否是待完善的股票（没有正确代码）
+  const isPendingStock = stock.pending_code === true || (stock.code && stock.code.startsWith('PENDING_'));
+  
   // 替换基本信息为输入框
   replaceInfoWithInput("name", stock.name || "");
-  replaceInfoWithInput("code", stock.code || "", true); // 代码只读
+  // 待完善的股票允许编辑代码，其他股票代码只读
+  replaceInfoWithInput("code", stock.code || "", !isPendingStock); 
   replaceInfoWithInput("board", stock.board || "");
   replaceInfoWithInput("industry", stock.industry || "");
   replaceInfoWithInput("mention_count", stock.mention_count || 0, false, "number");
