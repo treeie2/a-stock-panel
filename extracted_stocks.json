@@ -1,0 +1,127 @@
+{
+  "stocks": [
+    {
+      "name": "长光华芯",
+      "code": "300677.SZ",
+      "core_business": "光子集成电路（PIC）设计及硅光项目投资",
+      "industry": "半导体‑光电子",
+      "concept_tags": [
+        "硅光",
+        "光子集成电路",
+        "AI"
+      ]
+    },
+    {
+      "name": "亨通光电",
+      "code": "600487.SH",
+      "core_business": "光通信器件、光子集成电路及硅光项目投资",
+      "industry": "光电子‑光通信",
+      "concept_tags": [
+        "硅光",
+        "光模块",
+        "光通信"
+      ]
+    },
+    {
+      "name": "星钥光子",
+      "code": null,
+      "core_business": "硅光晶圆代工（Fab）项目，提供8英寸/12英寸硅光晶圆",
+      "industry": "半导体‑硅光",
+      "concept_tags": [
+        "硅光",
+        "光子集成电路",
+        "光模块"
+      ]
+    },
+    {
+      "name": "Tower Semiconductor",
+      "code": null,
+      "core_business": "硅光芯片代工、300mm/200mm晶圆制造、产能扩张",
+      "industry": "半导体‑代工",
+      "concept_tags": [
+        "硅光",
+        "晶圆代工",
+        "AI"
+      ]
+    },
+    {
+      "name": "威腾电气",
+      "code": "600xxxxx.SH",
+      "core_business": "高压母线、配电开关柜、光通信模块（通过合资公司）",
+      "industry": "电气设备‑电力系统",
+      "concept_tags": [
+        "母线",
+        "光通信",
+        "AIDC",
+        "核聚变"
+      ]
+    },
+    {
+      "name": "上海孛璞",
+      "code": null,
+      "core_business": "大口径光芯片（OCS）研发与生产，提供全光交换机关键技术",
+      "industry": "光电子‑光芯片",
+      "concept_tags": [
+        "光芯片",
+        "OCS",
+        "光模块"
+      ]
+    },
+    {
+      "name": "威璞光电",
+      "code": null,
+      "core_business": "高端光模块（800G/1.6T）研发、生产与销售",
+      "industry": "光通信‑光模块",
+      "concept_tags": [
+        "光模块",
+        "光通信",
+        "硅光"
+      ]
+    },
+    {
+      "name": "中际旭创",
+      "code": "688003.SS",
+      "core_business": "光子集成电路（PIC）设计、硅光模块解决方案",
+      "industry": "半导体‑光电子",
+      "concept_tags": [
+        "硅光",
+        "光子集成电路",
+        "AI"
+      ]
+    },
+    {
+      "name": "新易盛",
+      "code": "300502.SZ",
+      "core_business": "光子集成电路（PIC）设计、硅光模组研发",
+      "industry": "半导体‑光电子",
+      "concept_tags": [
+        "硅光",
+        "光子集成电路",
+        "AI"
+      ]
+    },
+    {
+      "name": "中泰机械",
+      "code": "601777.SH",
+      "core_business": "电子布织机研发、生产与销售（高端纺机）",
+      "industry": "机械设备‑纺织机械",
+      "concept_tags": [
+        "电子布",
+        "高端纺机",
+        "AI"
+      ]
+    },
+    {
+      "name": "泰坦股份",
+      "code": "300xxxxx.SZ",
+      "core_business": "高端电子布织机、固态电池硫化物电解质研发与生产",
+      "industry": "机械设备‑纺织机械 / 新能源材料‑固态电池",
+      "concept_tags": [
+        "电子布",
+        "高端纺机",
+        "固态电池",
+        "AI"
+      ]
+    }
+  ]
+}

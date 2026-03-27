@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A股可视化面板</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="container fade-in">
+    <header class="header">
+      <div class="header-top row-between">
+        <h1><i class="fa-solid fa-chart-pie"></i> A股可视化面板</h1>
+        <div class="wechat-parser">
+          <div class="input-with-icon">
+            <i class="fa-solid fa-link"></i>
+            <input id="wechatLink" type="url" placeholder="输入微信文章链接自动提取...">
+          </div>
+          <button id="parseBtn" class="btn primary"><i class="fa-solid fa-bolt"></i> 识别网页</button>
+          <input id="jsonFileInput" type="file" accept=".json" style="display: none;">
+          <button id="importJsonBtn" class="btn"><i class="fa-solid fa-file-import"></i> 导入 JSON</button>
+          <button id="addStockBtn" class="btn primary"><i class="fa-solid fa-plus"></i> 新增股票</button>
+        </div>
+      </div>
+      <p id="metaLine"><i class="fa-solid fa-spinner fa-spin"></i> 正在加载数据...</p>
+    </header>
+    <section class="metrics">
+      <article class="card">
+        <h2><i class="fa-solid fa-cubes"></i> 股票总数</h2>
+        <div id="totalStocks" class="metric-value">-</div>
+      </article>
+      <article class="card">
+        <h2><i class="fa-solid fa-hashtag"></i> 总提及次数</h2>
+        <div id="totalMentions" class="metric-value">-</div>
+      </article>
+      <article class="card">
+        <h2><i class="fa-regular fa-newspaper"></i> 总文章数</h2>
+        <div id="totalArticles" class="metric-value">-</div>
+      </article>
+    </section>
+    <section class="content-grid">
+      <article class="panel">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-chart-bar"></i> 行业分布 Top10</h2>
+        </div>
+        <div id="industryList" class="industry-list"></div>
+      </article>
+      <article class="panel">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-bookmark"></i> 股票索引</h2>
+          <div class="index-filter">
+            <button class="index-btn active" data-type="all">全部</button>
+            <button class="index-btn" data-type="letter">A-Z</button>
+            <button class="index-btn" data-type="num">数字</button>
+          </div>
+        </div>
+        <div id="stockIndex" class="stock-index"></div>
+      </article>
+      <article class="panel full-width">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-list-ul"></i> 个股列表</h2>
+          <div class="input-with-icon search-input-wrapper">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input id="searchInput" type="search" placeholder="按名称/代码/行业/概念筛选">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>股票</th>
+                <th>行业</th>
+                <th>概念</th>
+                <th>最新价</th>
+                <th>涨跌幅</th>
+                <th>市值</th>
+              </tr>
+            </thead>
+            <tbody id="stocksTableBody"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

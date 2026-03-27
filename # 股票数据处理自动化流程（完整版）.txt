@@ -1,0 +1,459 @@
+# 股票数据处理自动化流程（完整版）
+
+## ⚠️ 强制执行 - 每次处理股票必做！
+
+**问题**：总是会忘记 mapping 行业和概念，导致数据不完整。
+
+**解决方案**：自动化脚本 + 强制检查清单 + 邮件通知
+
+---
+
+## 🔄 完整处理流程（9 步）
+
+### 阶段一：数据获取与提取
+
+#### 步骤 1: 获取文章链接
+```bash
+# 来源：邮件、微信、RSS 等
+# 示例：https://mp.weixin.qq.com/s/xxx
+```
+
+#### 步骤 2: 保存 Raw Material（强制！）
+```bash
+cd /home/admin/openclaw/workspace/stock_db
+
+# 使用 scrapling 抓取微信文章
+python3 scripts/scrapling_fetch.py \
+    --url "https://mp.weixin.qq.com/s/xxx" \
+    --output data/raw_articles/文章标题_日期.txt
+```
+
+**输出位置**: `data/raw_articles/`
+
+**命名规范**: `文章标题_YYYY-MM-DD.txt`
+
+#### 步骤 3: LLM 提取股票信息
+```bash
+# 使用提取规则 v12
+python3 scripts/extract_rules_v12.py \
+    --input data/raw_articles/文章标题_日期.txt \
+    --output data/llm_extract_日期.json
+
+# 或使用 Gateway LLM 提取
+python3 scripts/llm_extract_gateway.py \
+    --input data/raw_articles/文章标题_日期.txt \
+    --output data/llm_extract_日期.json
+```
+
+**提取内容**:
+- ✅ 股票名称、代码
+- ✅ accidents（事故/风险）
+- ✅ insights（核心观点）
+- ✅ core_business（主营业务）
+- ✅ supply_chain（产业链）
+- ✅ capacity_data（产能数据）
+- ✅ valuation（估值信息）
+
+---
+
+### 阶段二：自动 Mapping 与校验
+
+#### 步骤 4: 自动 Mapping（强制！）
+```bash
+cd /home/admin/openclaw/workspace/stock_db
+python3 scripts/auto_stock_mapper.py \
+    --input data/llm_extract_日期.json \
+    --output data/llm_extract_日期_mapped.json
+```
+
+**自动获取**：
+- ✅ 股票代码（如无）
+- ✅ 同花顺行业（L1/L2/L3）
+- ✅ 所属概念
+- ✅ 核心业务
+- ✅ 合作伙伴
+
+#### 步骤 5: 校验匹配结果并发送邮件（强制！）
+```bash
+python3 scripts/check_match_and_notify.py \
+    --input data/llm_extract_日期_mapped.json \
+    --email 18901700722@163.com
+```
+
+**检查内容**:
+- ✅ 统计 match_type 分布
+- ✅ 识别港股（hk_stock）
+- ✅ 识别名称错误（none 类型）
+- ✅ 识别新股/数据源问题
+- ✅ **发送邮件通知**（如有异常）
+
+**匹配率标准**:
+| 成功率 | 行动 |
+|--------|------|
+| ≥ 80% | ✅ 正常，继续流程 |
+| 70-80% | ⚠️ 发送邮件提醒 |
+| < 70% | ❌ 发送邮件 + 暂停流程 |
+
+**必须邮件通知的情况**:
+1. **港股**（hk_stock）- 港股不在 A 股数据库
+2. **名称错误**（none）- LLM 提取的名称不准确
+3. **新股**（none）- 最新上市股票未收录
+4. **数据源问题**（none）- 个别股票数据缺失
+
+---
+
+### 阶段三：数据整合与部署
+
+#### 步骤 6: 更新 master.json
+```bash
+python3 scripts/update_master_with_mapping.py \
+    --input data/llm_extract_日期_mapped.json \
+    --output data/master/stocks_master.json
+```
+
+#### 步骤 7: 推送到 Railway
+```bash
+cd /home/admin/openclaw/workspace/railway-deploy
+git add -A
+git commit -m "📊 更新股票数据 - 日期 - 股票名称"
+git push origin main
+```
+
+#### 步骤 8: 验证部署
+```bash
+# 访问 Railway 测试搜索
+https://web-production-a1006c.up.railway.app/
+
+# 测试具体股票
+https://web-production-a1006c.up.railway.app/stock/600580  # 卧龙电驱
+```
+
+#### 步骤 9: 发送完成通知（可选）
+```bash
+python3 scripts/send_completion_email.py \
+    --input data/llm_extract_日期_mapped.json \
+    --email 18901700722@163.com \
+    --status success
+```
+
+---
+
+## 📊 完整流程图
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 阶段一：数据获取与提取                                       │
+├─────────────────────────────────────────────────────────────┤
+│  1. 获取文章链接                                            │
+│     ↓                                                       │
+│  2. 保存 Raw Material (scrapling_fetch.py)                 │
+│     ↓                                                       │
+│  3. LLM 提取 (extract_rules_v12.py / llm_extract_gateway.py) │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 阶段二：自动 Mapping 与校验                                   │
+├─────────────────────────────────────────────────────────────┤
+│  4. 自动 Mapping (auto_stock_mapper.py) ← 强制！            │
+│     ↓                                                       │
+│  5. 校验 + 邮件通知 (check_match_and_notify.py) ← 新增！    │
+│     - 成功率 ≥ 80%: 继续                                    │
+│     - 成功率 < 80%: 发送邮件，等待确认                      │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 阶段三：数据整合与部署                                       │
+├─────────────────────────────────────────────────────────────┤
+│  6. 更新 master.json (update_master_with_mapping.py)        │
+│     ↓                                                       │
+│  7. 推送到 Railway (git push)                               │
+│     ↓                                                       │
+│  8. 验证部署 (访问 Railway URL)                             │
+│     ↓                                                       │
+│  9. 发送完成通知 (可选)                                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📁 核心文件
+
+| 文件 | 用途 | 说明 |
+|------|------|------|
+| `data/raw_articles/*.txt` | 原始文章 | 微信文章抓取结果 |
+| `data/llm_extract_*.json` | LLM 提取结果 | 股票信息、观点、数据 |
+| `data/llm_extract_*_mapped.json` | Mapping 结果 | 补充行业、概念 |
+| `data/master/stocks_master.json` | 主数据库 | 整合后的完整数据 |
+| `data/stock_auto_map_db.json` | 自动 mapping 数据库 | 5492 只股票，含行业、概念 |
+| `data/stock_name_index.json` | 名称索引 | 5484 个唯一名称 |
+| `scripts/scrapling_fetch.py` | 文章抓取工具 |  bypass 微信反爬 |
+| `scripts/extract_rules_v12.py` | 提取规则 v12 | 结构化提取 |
+| `scripts/llm_extract_gateway.py` | Gateway LLM 提取 | 使用 qwen3.5-plus |
+| `scripts/auto_stock_mapper.py` | 自动 mapping 工具 | 识别名称后自动获取信息 |
+| `scripts/check_match_and_notify.py` | **校验 + 邮件通知** | **新增！** |
+| `scripts/send_completion_email.py` | 完成通知 | 可选 |
+| `scripts/update_master_with_mapping.py` | 数据整合工具 | 更新 master.json |
+| `AUTO_WORKFLOW.md` | 本文件 | 标准化流程文档 |
+
+---
+
+## 🎯 使用示例
+
+### 完整流程示例（处理 3.23 文章）
+
+```bash
+cd /home/admin/openclaw/workspace/stock_db
+
+# 1. 保存 Raw Material
+python3 scripts/scrapling_fetch.py \
+    --url "https://mp.weixin.qq.com/s/zGbNrhI3-UsFG0agB1Tz-g" \
+    --output data/raw_articles/今天的一些信息整理_3.23_20260324.txt
+
+# 2. LLM 提取
+python3 scripts/llm_extract_gateway.py \
+    --input data/raw_articles/今天的一些信息整理_3.23_20260324.txt \
+    --output data/llm_extract_3_23.json
+
+# 3. 自动 Mapping（强制！）
+python3 scripts/auto_stock_mapper.py \
+    --input data/llm_extract_3_23.json \
+    --output data/llm_extract_3_23_mapped.json
+
+# 4. 校验 + 邮件通知（强制！）
+python3 scripts/check_match_and_notify.py \
+    --input data/llm_extract_3_23_mapped.json \
+    --email 18901700722@163.com
+
+# 5. 更新 master.json
+python3 scripts/update_master_with_mapping.py \
+    --input data/llm_extract_3_23_mapped.json
+
+# 6. 推送到 Railway
+cd /home/admin/openclaw/workspace/railway-deploy
+git add -A
+git commit -m "📊 更新股票数据 - 2026-03-23 - 卧龙电驱等 6 只"
+git push origin main
+
+# 7. 验证
+# 访问 https://web-production-a1006c.up.railway.app/
+
+# 8. 发送完成通知（可选）
+python3 scripts/send_completion_email.py \
+    --input data/llm_extract_3_23_mapped.json \
+    --email 18901700722@163.com \
+    --status success
+```
+
+---
+
+## 📋 检查清单（每次必做！）
+
+### 阶段一：数据获取与提取
+- [ ] **步骤 1**: 获取文章链接（邮件/微信/RSS）
+- [ ] **步骤 2**: 保存 Raw Material 到 `data/raw_articles/`
+- [ ] **步骤 3**: 运行 LLM 提取，输出到 `data/llm_extract_*.json`
+
+### 阶段二：自动 Mapping 与校验
+- [ ] **步骤 4**: 运行 `auto_stock_mapper.py` 进行 mapping（强制！）
+- [ ] **步骤 5**: 运行 `check_match_and_notify.py` 校验 + 邮件通知（强制！）
+  - [ ] 检查成功率 ≥ 80%
+  - [ ] 如有港股/名称错误/新股/数据源问题，邮件已发送
+  - [ ] 等待用户确认（如有异常）
+- [ ] **步骤 6**: 验证行业、概念信息完整
+
+### 阶段三：数据整合与部署
+- [ ] **步骤 7**: 更新 `master.json`
+- [ ] **步骤 8**: 推送到 Railway（git commit + push）
+- [ ] **步骤 9**: 验证搜索功能（访问 Railway URL）
+- [ ] **步骤 10**: 发送完成通知（可选）
+
+---
+
+## 📧 邮件通知模板
+
+### 情况 1: 港股通知
+```
+主题：⚠️ 股票处理通知 - 发现港股（需确认）
+
+正文：
+在处理过程中发现以下港股，不在 A 股数据库中：
+
+- 雅迪控股（01585.HK）
+
+处理方式：
+1. 手动补充港股行业信息
+2. 或从处理列表中剔除
+
+请确认如何处理。
+```
+
+### 情况 2: 名称错误通知
+```
+主题：⚠️ 股票处理通知 - 名称匹配失败（需确认）
+
+正文：
+以下股票名称匹配失败，可能是 LLM 提取错误：
+
+- 股票代码：N/A
+- 提取名称："加仓中芯国际"
+- 建议修正："中芯国际"
+
+请确认正确名称。
+```
+
+### 情况 3: 新股通知
+```
+主题：⚠️ 股票处理通知 - 发现新股（需确认）
+
+正文：
+以下股票可能是最新上市，未收录到数据库：
+
+- 股票名称：XXX
+- 股票代码：XXX
+
+处理方式：
+1. 等待数据库更新（每周一次）
+2. 或手动补充数据
+
+请确认如何处理。
+```
+
+### 情况 4: 数据源问题通知
+```
+主题：⚠️ 股票处理通知 - 数据源问题（需确认）
+
+正文：
+以下股票数据源缺失：
+
+- 601115: 三一重能
+
+可能原因：
+- 数据源未及时更新
+- 股票信息变更
+
+请确认是否需要手动补充。
+```
+
+### 情况 5: 成功率过低通知
+```
+主题：🚨 股票处理通知 - 匹配成功率过低（需检查）
+
+正文：
+本次处理匹配成功率低于 70%：
+
+- 总股票数：X 只
+- 成功匹配：X 只（XX%）
+- 失败：X 只（XX%）
+
+可能原因：
+- LLM 提取质量差
+- 数据库需要更新
+
+请检查 LLM 提取规则或更新数据库。
+```
+
+---
+
+## 🚨 常见错误
+
+### 错误 1: 忘记保存 Raw Material
+**现象**: 只有提取结果，没有原始文章  
+**原因**: 跳过步骤 2  
+**解决**: 强制执行 `scrapling_fetch.py`
+
+### 错误 2: 忘记 mapping
+**现象**: 股票无行业、无概念、无代码  
+**原因**: 跳过步骤 4  
+**解决**: 强制执行 `auto_stock_mapper.py`
+
+### 错误 3: 忘记邮件通知
+**现象**: 匹配失败未通知用户  
+**原因**: 跳过步骤 5  
+**解决**: 强制执行 `check_match_and_notify.py`
+
+### 错误 4: 名称错误
+**现象**: `match_type: none`  
+**原因**: 提取的名称不准确（如"加仓中芯国际"）  
+**解决**: 人工核对，修正名称
+
+### 错误 5: 港股未处理
+**现象**: A 股数据库无港股信息  
+**原因**: 港股不在 `ths_industry_map.json` 中  
+**解决**: 手动补充港股行业信息
+
+---
+
+## ⚠️ 注意事项
+
+### 1. 港股处理
+- 港股代码格式：`01585.HK`
+- **自动识别并邮件通知**，不纳入处理流程
+- 识别规则：
+  - 代码包含".HK"
+  - 名称含"控股/集团/国际/香港"且无 6 位 A 股代码
+
+### 2. Raw Material 保存
+- 位置：`data/raw_articles/`
+- 命名：`文章标题_日期.txt`
+- 必须保存，便于后续核对和重新提取
+
+### 3. LLM 提取规则
+- v12 规则：支持 accidents, insights, core_business, supply_chain, capacity_data, valuation
+- Gateway 模型：gateway/qwen3.5-plus
+- 输出格式：JSON
+
+### 4. 邮件通知
+- 收件人：18901700722@163.com
+- 触发条件：
+  - 发现港股（hk_stock）
+  - 名称匹配失败（none）
+  - 成功率 < 80%
+- 使用 imap-smtp-email skill 发送
+
+### 5. 数据更新
+- 每周更新一次 `stock_auto_map_db.json`
+- 来源：`/home/admin/openclaw/workspace/temp/all_stocks_full.json`
+- 行业映射：`ths_industry_map.json`
+
+---
+
+## 📞 维护
+
+### 数据库更新
+```bash
+cd /home/admin/openclaw/workspace/stock_db
+python3 scripts/build_stock_db.py  # 重建数据库
+```
+
+### 脚本测试
+```bash
+python3 scripts/auto_stock_mapper.py --test
+python3 scripts/extract_rules_v12.py --test
+python3 scripts/check_match_and_notify.py --test
+```
+
+### 版本管理
+```bash
+# 创建流程文件新版本
+python3 scripts/manage_versions.py create AUTO_WORKFLOW
+
+# 查看版本历史
+python3 scripts/manage_versions.py list
+```
+
+---
+
+## 🔗 相关文档
+
+| 文档 | 用途 |
+|------|------|
+| `AUTO_MAPPING_SYSTEM.md` | 自动 Mapping 系统说明 |
+| `VERSION_MANAGEMENT.md` | 版本管理规范 |
+| `EXTRACTION_RULES_V12.md` | LLM 提取规则 v12 |
+| `scripts/README.md` | 脚本使用说明 |
+
+---
+
+**创建时间**: 2026-03-24  
+**版本**: 3.0（邮件通知版）  
+**状态**: ✅ 已部署
